@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
-import { Activity, Heart, TrendingUp, Users, Smartphone, Brain, Shield, Award, ChevronLeft, ChevronRight, Star, Quote } from 'lucide-react';
+import { Activity, Heart, TrendingUp, Users, Smartphone, Brain, Shield, ChevronLeft, ChevronRight, Star, Quote } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useTheme } from './ThemeProvider';
@@ -60,7 +60,7 @@ const testimonials = [
 export default function HomePage({ onLoginClick, onSignupClick }: HomePageProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   // Auto-advance hero images
   useEffect(() => {
@@ -113,7 +113,7 @@ export default function HomePage({ onLoginClick, onSignupClick }: HomePageProps)
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                onClick={toggleTheme}
                 className="rounded-full"
               >
                 {theme === 'dark' ? (
@@ -198,9 +198,8 @@ export default function HomePage({ onLoginClick, onSignupClick }: HomePageProps)
               <button
                 key={index}
                 onClick={() => setCurrentImageIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === currentImageIndex ? 'bg-white w-8' : 'bg-white/50'
-                }`}
+                className={`w - 2 h - 2 rounded - full transition - all ${index === currentImageIndex ? 'bg-white w-8' : 'bg-white/50'
+                  } `}
               />
             ))}
           </div>
@@ -221,7 +220,7 @@ export default function HomePage({ onLoginClick, onSignupClick }: HomePageProps)
               Our Vision
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Empowering Rwanda's Smart Health initiative with AI-driven preventive healthcare, 
+              Empowering Rwanda's Smart Health initiative with AI-driven preventive healthcare,
               making personalized wellness accessible to both urban and rural populations.
             </p>
           </motion.div>
@@ -363,11 +362,10 @@ export default function HomePage({ onLoginClick, onSignupClick }: HomePageProps)
                 <button
                   key={index}
                   onClick={() => setCurrentTestimonial(index)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    index === currentTestimonial
-                      ? 'bg-blue-600 w-8'
-                      : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
+                  className={`w - 2 h - 2 rounded - full transition - all ${index === currentTestimonial
+                    ? 'bg-blue-600 w-8'
+                    : 'bg-gray-300 dark:bg-gray-600'
+                    } `}
                 />
               ))}
             </div>

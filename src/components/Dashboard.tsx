@@ -2,23 +2,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
-import { 
-  Activity, 
-  Flame, 
-  Droplets, 
-  Moon, 
-  TrendingUp, 
-  Apple, 
+import {
+  Activity,
+  Flame,
+  Droplets,
+  Moon,
+  TrendingUp,
+  Apple,
   Dumbbell,
   Heart,
   Target,
   Clock,
   Calendar,
   Award,
-  ArrowUp,
+
   ArrowDown
 } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+
 
 export default function Dashboard() {
   const dailyStats = {
@@ -33,16 +33,6 @@ export default function Dashboard() {
     activeMinutes: 45,
     activeGoal: 60,
   };
-
-  const weeklyProgress = [
-    { day: 'Mon', calories: 2100, workouts: 1 },
-    { day: 'Tue', calories: 1950, workouts: 1 },
-    { day: 'Wed', calories: 2200, workouts: 0 },
-    { day: 'Thu', calories: 1850, workouts: 1 },
-    { day: 'Fri', calories: 2000, workouts: 1 },
-    { day: 'Sat', calories: 2300, workouts: 0 },
-    { day: 'Sun', calories: 1900, workouts: 1 },
-  ];
 
   const todayWorkouts = [
     {
@@ -187,12 +177,10 @@ export default function Dashboard() {
                     key={workout.id}
                     className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      workout.completed ? 'bg-green-100' : 'bg-gray-100'
-                    }`}>
-                      <Dumbbell className={`w-6 h-6 ${
-                        workout.completed ? 'text-green-600' : 'text-gray-400'
-                      }`} />
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${workout.completed ? 'bg-green-100' : 'bg-gray-100'
+                      }`}>
+                      <Dumbbell className={`w-6 h-6 ${workout.completed ? 'text-green-600' : 'text-gray-400'
+                        }`} />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -233,12 +221,10 @@ export default function Dashboard() {
                     key={meal.id}
                     className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      meal.completed ? 'bg-green-100' : 'bg-gray-100'
-                    }`}>
-                      <Apple className={`w-6 h-6 ${
-                        meal.completed ? 'text-green-600' : 'text-gray-400'
-                      }`} />
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${meal.completed ? 'bg-green-100' : 'bg-gray-100'
+                      }`}>
+                      <Apple className={`w-6 h-6 ${meal.completed ? 'text-green-600' : 'text-gray-400'
+                        }`} />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">

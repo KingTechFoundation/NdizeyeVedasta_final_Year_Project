@@ -5,6 +5,7 @@ type Theme = 'light' | 'dark';
 type ThemeContextType = {
   theme: Theme;
   toggleTheme: () => void;
+  setTheme?: (theme: Theme) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -28,15 +29,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!mounted) return;
-    
+
     const root = document.documentElement;
-    
+
     // Remove both classes first
     root.classList.remove('light', 'dark');
-    
+
     // Add the current theme class
     root.classList.add(theme);
-    
+
     // Save to localStorage
     localStorage.setItem('medifit-theme', theme);
   }, [theme, mounted]);

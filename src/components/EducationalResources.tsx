@@ -3,8 +3,8 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Input } from './ui/input';
-import { 
-  BookOpen, 
+import {
+
   Video,
   FileText,
   Search,

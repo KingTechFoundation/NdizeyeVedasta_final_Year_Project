@@ -1,10 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { 
+import {
   CheckCircle2,
   Activity,
   Users,
-  Smartphone,
+
   Bot,
   BarChart3,
   Book,
@@ -115,22 +115,22 @@ export default function PrototypeGuide() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              Medifit AI is designed to provide personalized fitness and diet recommendations based on user health profiles, 
-              goals, and lifestyle data. The system aims to make health coaching accessible, affordable, and scalable, 
+              Medifit AI is designed to provide personalized fitness and diet recommendations based on user health profiles,
+              goals, and lifestyle data. The system aims to make health coaching accessible, affordable, and scalable,
               particularly for populations without access to personal trainers or dietitians.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <p className="text-sm text-gray-900 dark:text-gray-100 mb-2">General Objective</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Design and implement an AI-driven fitness and diet management system that promotes 
+                  Design and implement an AI-driven fitness and diet management system that promotes
                   preventive healthcare through personalized, data-based coaching and nutritional guidance.
                 </p>
               </div>
               <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                 <p className="text-sm text-gray-900 dark:text-gray-100 mb-2">Target Impact</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Contribution to Rwanda's Smart Health and Digital Transformation agendas by demonstrating 
+                  Contribution to Rwanda's Smart Health and Digital Transformation agendas by demonstrating
                   how AI can enhance healthcare accessibility and personalization.
                 </p>
               </div>

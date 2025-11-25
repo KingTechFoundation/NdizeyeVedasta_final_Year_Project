@@ -3,9 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { 
-  Watch, 
-  Smartphone,
+import {
+  Watch,
+
   Activity,
   Heart,
   Footprints,
@@ -16,7 +16,7 @@ import {
   RefreshCw,
   Settings,
   ChevronRight,
-  CheckCircle2,
+
   AlertCircle,
   Battery,
   Zap
@@ -98,10 +98,10 @@ export default function WearableDevices() {
     // Simulate sync
     await new Promise(resolve => setTimeout(resolve, 2000));
     setSyncing(false);
-    
+
     // Update last sync time
-    setDevices(devices.map(device => 
-      device.connected 
+    setDevices(devices.map(device =>
+      device.connected
         ? { ...device, lastSync: 'Just now' }
         : device
     ));
@@ -145,12 +145,10 @@ export default function WearableDevices() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
-                    <div className={`w-14 h-14 rounded-full ${
-                      device.connected ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'
-                    } flex items-center justify-center`}>
-                      <Icon className={`w-7 h-7 ${
-                        device.connected ? 'text-green-600' : 'text-gray-400'
-                      }`} />
+                    <div className={`w-14 h-14 rounded-full ${device.connected ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'
+                      } flex items-center justify-center`}>
+                      <Icon className={`w-7 h-7 ${device.connected ? 'text-green-600' : 'text-gray-400'
+                        }`} />
                     </div>
                     <div>
                       <CardTitle className="text-lg">{device.name}</CardTitle>
@@ -214,11 +212,10 @@ export default function WearableDevices() {
                   <div className="flex gap-2 pt-2">
                     <Button
                       variant={device.connected ? 'outline' : 'default'}
-                      className={`flex-1 ${
-                        device.connected 
-                          ? 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' 
+                      className={`flex-1 ${device.connected
+                          ? 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20'
                           : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
+                        }`}
                       onClick={() => toggleConnection(device.id)}
                     >
                       {device.connected ? 'Disconnect' : 'Connect'}
@@ -274,7 +271,7 @@ export default function WearableDevices() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">Sync data automatically when app is open</p>
               </div>
             </div>
-            <Switch 
+            <Switch
               checked={syncSettings.autoSync}
               onCheckedChange={() => handleSyncToggle('autoSync')}
             />
@@ -290,7 +287,7 @@ export default function WearableDevices() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">Keep syncing even when app is in background</p>
               </div>
             </div>
-            <Switch 
+            <Switch
               checked={syncSettings.backgroundSync}
               onCheckedChange={() => handleSyncToggle('backgroundSync')}
             />
@@ -300,13 +297,13 @@ export default function WearableDevices() {
 
           <div className="space-y-3">
             <p className="text-sm text-gray-700 dark:text-gray-300">Data Types</p>
-            
+
             <div className="flex items-center justify-between pl-4">
               <div className="flex items-center gap-2">
                 <Heart className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span className="text-sm text-gray-900 dark:text-white">Heart Rate</span>
               </div>
-              <Switch 
+              <Switch
                 checked={syncSettings.syncHeartRate}
                 onCheckedChange={() => handleSyncToggle('syncHeartRate')}
               />
@@ -317,7 +314,7 @@ export default function WearableDevices() {
                 <Footprints className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span className="text-sm text-gray-900 dark:text-white">Steps & Activity</span>
               </div>
-              <Switch 
+              <Switch
                 checked={syncSettings.syncSteps}
                 onCheckedChange={() => handleSyncToggle('syncSteps')}
               />
@@ -328,7 +325,7 @@ export default function WearableDevices() {
                 <Moon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span className="text-sm text-gray-900 dark:text-white">Sleep Data</span>
               </div>
-              <Switch 
+              <Switch
                 checked={syncSettings.syncSleep}
                 onCheckedChange={() => handleSyncToggle('syncSleep')}
               />
@@ -339,7 +336,7 @@ export default function WearableDevices() {
                 <Flame className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span className="text-sm text-gray-900 dark:text-white">Calories Burned</span>
               </div>
-              <Switch 
+              <Switch
                 checked={syncSettings.syncCalories}
                 onCheckedChange={() => handleSyncToggle('syncCalories')}
               />
@@ -350,7 +347,7 @@ export default function WearableDevices() {
                 <Activity className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span className="text-sm text-gray-900 dark:text-white">Workouts</span>
               </div>
-              <Switch 
+              <Switch
                 checked={syncSettings.syncWorkouts}
                 onCheckedChange={() => handleSyncToggle('syncWorkouts')}
               />

@@ -5,8 +5,8 @@ import { Badge } from './ui/badge';
 import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { 
-  ShoppingCart, 
+import {
+  ShoppingCart,
   Plus,
   Trash2,
   Check,
@@ -17,7 +17,7 @@ import {
   Beef,
   Milk,
   Wheat,
-  Fish,
+
   Leaf
 } from 'lucide-react';
 import { Separator } from './ui/separator';
@@ -38,23 +38,23 @@ export default function ShoppingList() {
     { id: '2', name: 'Salmon Fillet', quantity: '500g', category: 'Proteins', checked: false, price: 12000 },
     { id: '3', name: 'Greek Yogurt', quantity: '4 cups', category: 'Dairy', checked: true, price: 3000 },
     { id: '4', name: 'Eggs', quantity: '12 pcs', category: 'Proteins', checked: false, price: 2500 },
-    
+
     // Vegetables
     { id: '5', name: 'Broccoli', quantity: '500g', category: 'Vegetables', checked: false, price: 1500 },
     { id: '6', name: 'Spinach', quantity: '200g', category: 'Vegetables', checked: false, price: 800 },
     { id: '7', name: 'Bell Peppers', quantity: '3 pcs', category: 'Vegetables', checked: true, price: 1200 },
     { id: '8', name: 'Tomatoes', quantity: '1 kg', category: 'Vegetables', checked: false, price: 1000 },
-    
+
     // Fruits
     { id: '9', name: 'Bananas', quantity: '6 pcs', category: 'Fruits', checked: false, price: 1500 },
     { id: '10', name: 'Berries (Mixed)', quantity: '300g', category: 'Fruits', checked: false, price: 4000 },
     { id: '11', name: 'Avocado', quantity: '3 pcs', category: 'Fruits', checked: false, price: 2100 },
-    
+
     // Grains
     { id: '12', name: 'Brown Rice', quantity: '2 kg', category: 'Grains', checked: false, price: 3500 },
     { id: '13', name: 'Quinoa', quantity: '500g', category: 'Grains', checked: false, price: 5000 },
     { id: '14', name: 'Oatmeal', quantity: '1 kg', category: 'Grains', checked: true, price: 2800 },
-    
+
     // Others
     { id: '15', name: 'Almond Butter', quantity: '1 jar', category: 'Others', checked: false, price: 6000 },
     { id: '16', name: 'Olive Oil', quantity: '500ml', category: 'Others', checked: false, price: 4500 },
@@ -74,8 +74,8 @@ export default function ShoppingList() {
   };
 
   const toggleItem = (id: string) => {
-    setShoppingList(list => 
-      list.map(item => 
+    setShoppingList(list =>
+      list.map(item =>
         item.id === id ? { ...item, checked: !item.checked } : item
       )
     );
@@ -239,11 +239,10 @@ export default function ShoppingList() {
                     {items.map((item) => (
                       <div
                         key={item.id}
-                        className={`flex items-center gap-3 p-3 rounded-lg border ${
-                          item.checked 
-                            ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700' 
+                        className={`flex items-center gap-3 p-3 rounded-lg border ${item.checked
+                            ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                             : 'border-gray-200 dark:border-gray-700'
-                        }`}
+                          }`}
                       >
                         <Checkbox
                           checked={item.checked}

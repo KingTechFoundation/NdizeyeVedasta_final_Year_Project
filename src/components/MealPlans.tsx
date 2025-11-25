@@ -3,9 +3,9 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Progress } from './ui/progress';
-import { 
-  Apple, 
-  Clock, 
+import {
+
+  Clock,
   Flame,
   ChevronRight,
   Plus,
@@ -172,8 +172,8 @@ export default function MealPlans() {
                   {dailyNutrition.calories.consumed}/{dailyNutrition.calories.goal}
                 </span>
               </div>
-              <Progress 
-                value={(dailyNutrition.calories.consumed / dailyNutrition.calories.goal) * 100} 
+              <Progress
+                value={(dailyNutrition.calories.consumed / dailyNutrition.calories.goal) * 100}
                 className="h-2"
               />
               <div className="flex items-center gap-2">
@@ -191,8 +191,8 @@ export default function MealPlans() {
                   {dailyNutrition.protein.consumed}/{dailyNutrition.protein.goal}g
                 </span>
               </div>
-              <Progress 
-                value={(dailyNutrition.protein.consumed / dailyNutrition.protein.goal) * 100} 
+              <Progress
+                value={(dailyNutrition.protein.consumed / dailyNutrition.protein.goal) * 100}
                 className="h-2"
               />
             </div>
@@ -204,8 +204,8 @@ export default function MealPlans() {
                   {dailyNutrition.carbs.consumed}/{dailyNutrition.carbs.goal}g
                 </span>
               </div>
-              <Progress 
-                value={(dailyNutrition.carbs.consumed / dailyNutrition.carbs.goal) * 100} 
+              <Progress
+                value={(dailyNutrition.carbs.consumed / dailyNutrition.carbs.goal) * 100}
                 className="h-2"
               />
             </div>
@@ -217,8 +217,8 @@ export default function MealPlans() {
                   {dailyNutrition.fats.consumed}/{dailyNutrition.fats.goal}g
                 </span>
               </div>
-              <Progress 
-                value={(dailyNutrition.fats.consumed / dailyNutrition.fats.goal) * 100} 
+              <Progress
+                value={(dailyNutrition.fats.consumed / dailyNutrition.fats.goal) * 100}
                 className="h-2"
               />
             </div>
