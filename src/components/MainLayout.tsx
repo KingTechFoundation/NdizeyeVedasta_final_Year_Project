@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { useTheme } from './ThemeProvider';
+import { useAuth } from '../contexts/AuthContext';
+import { NavigationProvider } from '../contexts/NavigationContext';
 import {
   Activity,
   LayoutDashboard,
@@ -33,9 +35,12 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ onLogout }: MainLayoutProps) {
+  const { user } = useAuth();
   const [activeView, setActiveView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dashboardKey, setDashboardKey] = useState(0);
   const { theme, toggleTheme } = useTheme();
+  const prevActiveViewRef = useRef('dashboard');
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -48,10 +53,18 @@ export default function MainLayout({ onLogout }: MainLayoutProps) {
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
+  // Refresh dashboard when user navigates to it
+  useEffect(() => {
+    if (activeView === 'dashboard' && prevActiveViewRef.current !== 'dashboard') {
+      setDashboardKey((prev: number) => prev + 1);
+    }
+    prevActiveViewRef.current = activeView;
+  }, [activeView]);
+
   const renderView = () => {
     switch (activeView) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard key={`dashboard-${dashboardKey}`} />;
       case 'workouts':
         return <WorkoutPlans />;
       case 'meals':
@@ -67,7 +80,7 @@ export default function MainLayout({ onLogout }: MainLayoutProps) {
       case 'profile':
         return <ProfileManagement />;
       default:
-        return <Dashboard />;
+        return <Dashboard key={`dashboard-${dashboardKey}`} />;
     }
   };
 
@@ -138,14 +151,21 @@ export default function MainLayout({ onLogout }: MainLayoutProps) {
           <div className='p-4 border-t border-gray-200 dark:border-gray-700'>
             <div className='flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer'>
               <Avatar className='w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600'>
-                <AvatarFallback className='text-white'>JD</AvatarFallback>
+                <AvatarFallback className='text-white'>
+                  {user?.fullName
+                    ?.split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2) || 'U'}
+                </AvatarFallback>
               </Avatar>
               <div className='flex-1 min-w-0'>
                 <p className='text-sm text-gray-900 dark:text-white truncate'>
-                  Ndizeye Vedaste
+                  {user?.fullName || 'User'}
                 </p>
                 <p className='text-xs text-gray-500 dark:text-gray-400 truncate'>
-                  veda@gmail.com
+                  {user?.email || ''}
                 </p>
               </div>
             </div>
@@ -204,7 +224,9 @@ export default function MainLayout({ onLogout }: MainLayoutProps) {
 
         {/* Page Content */}
         <main className='flex-1 overflow-y-auto p-4 lg:p-8'>
-          {renderView()}
+          <NavigationProvider navigateTo={setActiveView}>
+            {renderView()}
+          </NavigationProvider>
         </main>
       </div>
 

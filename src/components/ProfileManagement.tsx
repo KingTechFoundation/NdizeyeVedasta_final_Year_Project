@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -18,20 +18,29 @@ import {
   Target,
   Edit,
   Check,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
+import { userApi, type User as UserType } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
 export default function ProfileManagement() {
+  const { user: authUser, setUser } = useAuth();
   const [editingProfile, setEditingProfile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [user, setUserData] = useState<UserType | null>(null);
   const [profileData, setProfileData] = useState({
-    name: 'Ndizeye Vedaste',
-    email: 'veda@example.com',
-    phone: '+250 788 123 456',
-    age: '28',
-    gender: 'male',
-    height: '175',
-    weight: '70.5',
+    fullName: '',
+    email: '',
+    phone: '',
+    age: '',
+    gender: 'male' as 'male' | 'female' | 'other',
+    height: '',
+    weight: '',
     goal: 'lose-weight',
+    activityLevel: 'moderate',
   });
 
   const [notifications, setNotifications] = useState({
@@ -55,15 +64,132 @@ export default function ProfileManagement() {
     { name: 'Fitbit Charge 5', status: 'Not Connected', lastSync: 'Never' },
   ];
 
-  const handleSaveProfile = () => {
-    setEditingProfile(false);
-    // Save logic here
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    setIsLoading(true);
+    try {
+      const response = await userApi.getProfile();
+      if (response.success && response.data) {
+        const userData = response.data.user;
+        setUserData(userData);
+        setProfileData({
+          fullName: userData.fullName || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          age: userData.onboardingData?.age?.toString() || '',
+          gender: (userData.onboardingData?.gender as 'male' | 'female' | 'other') || 'male',
+          height: userData.onboardingData?.height?.toString() || '',
+          weight: userData.onboardingData?.weight?.toString() || '',
+          goal: userData.onboardingData?.goal || 'lose-weight',
+          activityLevel: userData.onboardingData?.activityLevel || 'moderate',
+        });
+        // Load notification preferences
+        if (userData.notificationPreferences) {
+          setNotifications(userData.notificationPreferences);
+        }
+        // Update auth context user
+        if (setUser) {
+          setUser(userData);
+        }
+      } else {
+        toast.error(response.message || 'Failed to load profile');
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      toast.error('Failed to load profile');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    try {
+      const updateData: any = {
+        fullName: profileData.fullName,
+        phone: profileData.phone,
+        onboardingData: {
+          age: profileData.age ? parseInt(profileData.age) : undefined,
+          gender: profileData.gender,
+          height: profileData.height ? parseFloat(profileData.height) : undefined,
+          weight: profileData.weight ? parseFloat(profileData.weight) : undefined,
+          goal: profileData.goal,
+          activityLevel: profileData.activityLevel,
+        },
+      };
+
+      const response = await userApi.updateProfile(updateData);
+      if (response.success && response.data) {
+        toast.success('Profile updated successfully');
+        setUserData(response.data.user);
+        if (setUser) {
+          setUser(response.data.user);
+        }
+        setEditingProfile(false);
+      } else {
+        toast.error(response.message || 'Failed to update profile');
+      }
+    } catch (error: any) {
+      console.error('Failed to update profile:', error);
+      toast.error(error.message || 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancelEdit = () => {
-    setEditingProfile(false);
     // Reset to original values
+    if (user) {
+      setProfileData({
+        fullName: user.fullName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        age: user.onboardingData?.age?.toString() || '',
+        gender: (user.onboardingData?.gender as 'male' | 'female' | 'other') || 'male',
+        height: user.onboardingData?.height?.toString() || '',
+        weight: user.onboardingData?.weight?.toString() || '',
+        goal: user.onboardingData?.goal || 'lose-weight',
+        activityLevel: user.onboardingData?.activityLevel || 'moderate',
+      });
+    }
+    setEditingProfile(false);
   };
+
+  // Calculate BMI
+  const calculateBMI = () => {
+    const height = parseFloat(profileData.height);
+    const weight = parseFloat(profileData.weight);
+    if (height && weight && height > 0) {
+      const heightInMeters = height / 100;
+      return (weight / (heightInMeters * heightInMeters)).toFixed(1);
+    }
+    return null;
+  };
+
+  const bmi = calculateBMI();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600 mb-4">Failed to load profile data</p>
+        <Button onClick={fetchProfile}>Retry</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -78,33 +204,48 @@ export default function ProfileManagement() {
           <div className="flex items-start gap-6">
             <Avatar className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600">
               <AvatarFallback className="text-3xl text-white">
-                {profileData.name.split(' ').map(n => n[0]).join('')}
+                {profileData.fullName
+                  .split(' ')
+                  .map(n => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2) || 'U'}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <h2 className="text-2xl text-gray-900">{profileData.name}</h2>
+                  <h2 className="text-2xl text-gray-900">{profileData.fullName || 'User'}</h2>
                   <p className="text-gray-600">{profileData.email}</p>
                 </div>
-                <Badge className="bg-blue-600">Premium Member</Badge>
+                {user.isEmailVerified && (
+                  <Badge className="bg-green-600">Verified</Badge>
+                )}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Age</p>
-                  <p className="text-lg text-gray-900">{profileData.age} years</p>
+                  <p className="text-lg text-gray-900">
+                    {profileData.age ? `${profileData.age} years` : 'Not set'}
+                  </p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Height</p>
-                  <p className="text-lg text-gray-900">{profileData.height} cm</p>
+                  <p className="text-lg text-gray-900">
+                    {profileData.height ? `${profileData.height} cm` : 'Not set'}
+                  </p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Weight</p>
-                  <p className="text-lg text-gray-900">{profileData.weight} kg</p>
+                  <p className="text-lg text-gray-900">
+                    {profileData.weight ? `${profileData.weight} kg` : 'Not set'}
+                  </p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">BMI</p>
-                  <p className="text-lg text-gray-900">23.0</p>
+                  <p className="text-lg text-gray-900">
+                    {bmi || 'N/A'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -160,8 +301,8 @@ export default function ProfileManagement() {
                     <Label htmlFor="name">Full Name</Label>
                     <Input
                       id="name"
-                      value={profileData.name}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                      value={profileData.fullName}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))}
                       disabled={!editingProfile}
                     />
                   </div>
@@ -172,7 +313,8 @@ export default function ProfileManagement() {
                       type="email"
                       value={profileData.email}
                       onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                      disabled={!editingProfile}
+                      disabled={true}
+                      className="bg-gray-50"
                     />
                   </div>
                 </div>
@@ -203,7 +345,7 @@ export default function ProfileManagement() {
                   <Label>Gender</Label>
                   <Select 
                     value={profileData.gender}
-                    onValueChange={(value) => setProfileData(prev => ({ ...prev, gender: value }))}
+                    onValueChange={(value) => setProfileData(prev => ({ ...prev, gender: value as 'male' | 'female' | 'other' }))}
                     disabled={!editingProfile}
                   >
                     <SelectTrigger>
@@ -220,11 +362,24 @@ export default function ProfileManagement() {
 
                 {editingProfile && (
                   <div className="flex gap-2 pt-4">
-                    <Button onClick={handleSaveProfile} className="bg-blue-600 hover:bg-blue-700">
-                      <Check className="w-4 h-4 mr-2" />
-                      Save Changes
+                    <Button 
+                      onClick={handleSaveProfile} 
+                      className="bg-blue-600 hover:bg-blue-700"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
                     </Button>
-                    <Button variant="outline" onClick={handleCancelEdit}>
+                    <Button variant="outline" onClick={handleCancelEdit} disabled={isSaving}>
                       <X className="w-4 h-4 mr-2" />
                       Cancel
                     </Button>
@@ -320,7 +475,20 @@ export default function ProfileManagement() {
                   </div>
                 </div>
 
-                <Button className="bg-blue-600 hover:bg-blue-700">Save Health Profile</Button>
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Health Profile'
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -360,10 +528,10 @@ export default function ProfileManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="lose-weight">Lose Weight</SelectItem>
-                      <SelectItem value="gain-muscle">Gain Muscle</SelectItem>
-                      <SelectItem value="maintain">Maintain Weight</SelectItem>
+                      <SelectItem value="gain-weight">Gain Weight</SelectItem>
+                      <SelectItem value="build-muscle">Build Muscle</SelectItem>
+                      <SelectItem value="maintain-weight">Maintain Weight</SelectItem>
                       <SelectItem value="improve-health">Improve Overall Health</SelectItem>
-                      <SelectItem value="athletic">Athletic Performance</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -385,22 +553,38 @@ export default function ProfileManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Weekly Workout Goal</Label>
-                  <Select defaultValue="5">
+                  <Label>Activity Level</Label>
+                  <Select 
+                    value={profileData.activityLevel}
+                    onValueChange={(value) => setProfileData(prev => ({ ...prev, activityLevel: value }))}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="3">3 days per week</SelectItem>
-                      <SelectItem value="4">4 days per week</SelectItem>
-                      <SelectItem value="5">5 days per week</SelectItem>
-                      <SelectItem value="6">6 days per week</SelectItem>
-                      <SelectItem value="7">7 days per week</SelectItem>
+                      <SelectItem value="sedentary">Sedentary</SelectItem>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="moderate">Moderate</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="very-active">Very Active</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <Button className="bg-blue-600 hover:bg-blue-700">Update Goals</Button>
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Update Goals'
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -432,9 +616,28 @@ export default function ProfileManagement() {
                     </div>
                     <Switch
                       checked={value}
-                      onCheckedChange={(checked) => 
-                        setNotifications(prev => ({ ...prev, [key]: checked }))
-                      }
+                      onCheckedChange={async (checked) => {
+                        const updated = { ...notifications, [key]: checked };
+                        setNotifications(updated);
+                        // Save to database
+                        try {
+                          const response = await userApi.updateProfile({
+                            notificationPreferences: updated,
+                          });
+                          if (response.success) {
+                            toast.success('Notification preferences updated');
+                          } else {
+                            toast.error(response.message || 'Failed to update preferences');
+                            // Revert on error
+                            setNotifications(notifications);
+                          }
+                        } catch (error: any) {
+                          console.error('Failed to update notification preferences:', error);
+                          toast.error(error.message || 'Failed to update preferences');
+                          // Revert on error
+                          setNotifications(notifications);
+                        }
+                      }}
                     />
                   </div>
                 ))}

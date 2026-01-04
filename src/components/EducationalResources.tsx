@@ -1,10 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Input } from './ui/input';
 import {
-
   Video,
   FileText,
   Search,
@@ -16,118 +16,284 @@ import {
   Brain,
   Bookmark,
   Play,
-  ChevronRight
+  ChevronRight,
+  Loader2,
+  X,
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { resourceApi, type Resource } from '../services/api';
+import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
+
+type ViewMode = 'list' | 'article' | 'video';
 
 export default function EducationalResources() {
-  const articles = [
-    {
-      id: 1,
-      title: 'Understanding Your BMI and What It Means',
-      category: 'Health Basics',
-      readTime: '5 min',
-      image: 'https://images.unsplash.com/photo-1645652367526-a0ecb717650a?w=400&q=80',
-      excerpt: 'Learn what your Body Mass Index tells you about your health and its limitations.',
-      saved: false,
-    },
-    {
-      id: 2,
-      title: 'The Importance of Protein in Muscle Recovery',
-      category: 'Nutrition',
-      readTime: '7 min',
-      image: 'https://images.unsplash.com/photo-1621484488308-3fc11031f2b6?w=400&q=80',
-      excerpt: 'Discover how protein helps your muscles recover and grow after workouts.',
-      saved: true,
-    },
-    {
-      id: 3,
-      title: 'HIIT vs Steady-State Cardio: Which is Better?',
-      category: 'Fitness',
-      readTime: '8 min',
-      image: 'https://images.unsplash.com/photo-1729280860113-82372b7afad6?w=400&q=80',
-      excerpt: 'Compare the benefits of high-intensity interval training and traditional cardio.',
-      saved: false,
-    },
-    {
-      id: 4,
-      title: 'Sleep and Recovery: The Missing Link',
-      category: 'Wellness',
-      readTime: '6 min',
-      image: 'https://images.unsplash.com/photo-1645652367526-a0ecb717650a?w=400&q=80',
-      excerpt: 'Why quality sleep is crucial for your fitness goals and overall health.',
-      saved: true,
-    },
-    {
-      id: 5,
-      title: 'Preventing Common Workout Injuries',
-      category: 'Safety',
-      readTime: '10 min',
-      image: 'https://images.unsplash.com/photo-1584827387179-355517d8a5fb?w=400&q=80',
-      excerpt: 'Essential tips to stay safe and injury-free during your fitness journey.',
-      saved: false,
-    },
-    {
-      id: 6,
-      title: 'Meal Prep 101: Save Time and Stay on Track',
-      category: 'Nutrition',
-      readTime: '12 min',
-      image: 'https://images.unsplash.com/photo-1621484488308-3fc11031f2b6?w=400&q=80',
-      excerpt: 'A beginner\'s guide to planning and preparing healthy meals in advance.',
-      saved: false,
-    },
-  ];
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [featuredResource, setFeaturedResource] = useState<Resource | null>(null);
+  const [categories, setCategories] = useState<{ name: string; count: number }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedType, setSelectedType] = useState<'article' | 'video' | 'all'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const videos = [
-    {
-      id: 1,
-      title: 'Perfect Push-Up Form Tutorial',
-      duration: '8:23',
-      category: 'Exercise Technique',
-      thumbnail: 'https://images.unsplash.com/photo-1584827387179-355517d8a5fb?w=400&q=80',
-      views: '12.5K',
-    },
-    {
-      id: 2,
-      title: 'Healthy Meal Prep for Beginners',
-      duration: '15:42',
-      category: 'Cooking',
-      thumbnail: 'https://images.unsplash.com/photo-1621484488308-3fc11031f2b6?w=400&q=80',
-      views: '28.3K',
-    },
-    {
-      id: 3,
-      title: '20-Minute Full Body Workout',
-      duration: '20:15',
-      category: 'Workout',
-      thumbnail: 'https://images.unsplash.com/photo-1729280860113-82372b7afad6?w=400&q=80',
-      views: '45.2K',
-    },
-    {
-      id: 4,
-      title: 'Understanding Macronutrients',
-      duration: '12:30',
-      category: 'Nutrition Education',
-      thumbnail: 'https://images.unsplash.com/photo-1621484488308-3fc11031f2b6?w=400&q=80',
-      views: '19.8K',
-    },
-  ];
+  useEffect(() => {
+    fetchResources();
+    fetchCategories();
+  }, [selectedCategory, selectedType, searchQuery, currentPage]);
 
-  const topics = [
-    { name: 'Weight Loss', icon: TrendingUp, color: 'bg-blue-100 text-blue-600', articles: 24 },
-    { name: 'Muscle Gain', icon: Dumbbell, color: 'bg-purple-100 text-purple-600', articles: 18 },
-    { name: 'Nutrition', icon: Apple, color: 'bg-green-100 text-green-600', articles: 32 },
-    { name: 'Mental Health', icon: Brain, color: 'bg-pink-100 text-pink-600', articles: 15 },
-    { name: 'Heart Health', icon: Heart, color: 'bg-red-100 text-red-600', articles: 21 },
-    { name: 'Wellness', icon: Heart, color: 'bg-orange-100 text-orange-600', articles: 27 },
-  ];
-
-  const featuredContent = {
-    title: 'Understanding Non-Communicable Diseases (NCDs)',
-    description: 'A comprehensive guide to preventing lifestyle-related diseases through proper diet and exercise',
-    duration: '15 min read',
-    image: 'https://images.unsplash.com/photo-1645652367526-a0ecb717650a?w=800&q=80',
+  const fetchResources = async () => {
+    setIsLoading(true);
+    try {
+      const response = await resourceApi.getResources({
+        type: selectedType === 'all' ? undefined : selectedType,
+        category: selectedCategory || undefined,
+        search: searchQuery || undefined,
+        featured: false,
+        page: currentPage,
+        limit: 12,
+      });
+      if (response.success && response.data) {
+        setResources(response.data.resources);
+        setTotalPages(response.data.pagination.pages);
+      }
+    } catch (error) {
+      toast.error('Failed to load resources');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const fetchFeatured = async () => {
+    try {
+      const response = await resourceApi.getResources({
+        featured: true,
+        limit: 1,
+      });
+      if (response.success && response.data && response.data.resources.length > 0) {
+        setFeaturedResource(response.data.resources[0]);
+      }
+    } catch (error) {
+      console.error('Failed to load featured resource');
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await resourceApi.getCategories();
+      if (response.success && response.data) {
+        setCategories(response.data.categories);
+      }
+    } catch (error) {
+      console.error('Failed to load categories');
+    }
+  };
+
+  useEffect(() => {
+    fetchFeatured();
+  }, []);
+
+  const handleResourceClick = async (resource: Resource) => {
+    try {
+      const response = await resourceApi.getResourceById(resource._id);
+      if (response.success && response.data) {
+        setSelectedResource(response.data.resource);
+        setViewMode(resource.type === 'article' ? 'article' : 'video');
+      }
+    } catch (error) {
+      toast.error('Failed to load resource');
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    fetchResources();
+  };
+
+  const categoryIcons: Record<string, any> = {
+    'fitness': Dumbbell,
+    'nutrition': Apple,
+    'health-education': Brain,
+    'wellness': Heart,
+    'workout-guides': Dumbbell,
+    'meal-planning': Apple,
+    'mental-health': Brain,
+    'disease-prevention': Heart,
+  };
+
+  const categoryColors: Record<string, string> = {
+    'fitness': 'bg-purple-100 text-purple-600',
+    'nutrition': 'bg-green-100 text-green-600',
+    'health-education': 'bg-blue-100 text-blue-600',
+    'wellness': 'bg-pink-100 text-pink-600',
+    'workout-guides': 'bg-purple-100 text-purple-600',
+    'meal-planning': 'bg-green-100 text-green-600',
+    'mental-health': 'bg-pink-100 text-pink-600',
+    'disease-prevention': 'bg-red-100 text-red-600',
+  };
+
+  // Article View
+  if (viewMode === 'article' && selectedResource) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6 p-6">
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setViewMode('list');
+            setSelectedResource(null);
+          }}
+          className="mb-4"
+        >
+          <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+          Back to Resources
+        </Button>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Badge variant="secondary">{selectedResource.category}</Badge>
+                  {selectedResource.featured && <Badge className="bg-blue-600">Featured</Badge>}
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">{selectedResource.title}</h1>
+                <p className="text-lg text-gray-600 mb-4">{selectedResource.description}</p>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span>By {selectedResource.author}</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {selectedResource.duration} min read
+                  </span>
+                  <span>{selectedResource.views} views</span>
+                </div>
+              </div>
+
+              {selectedResource.thumbnail && (
+                <div className="aspect-video rounded-lg overflow-hidden">
+                  <img
+                    src={selectedResource.thumbnail}
+                    alt={selectedResource.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="prose prose-lg max-w-none">
+                {selectedResource.content ? (
+                  <ReactMarkdown>{selectedResource.content}</ReactMarkdown>
+                ) : (
+                  <p className="text-gray-600">Content not available.</p>
+                )}
+              </div>
+
+              {selectedResource.tags && selectedResource.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-4 border-t">
+                  {selectedResource.tags.map((tag, index) => (
+                    <Badge key={index} variant="outline">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Video View
+  if (viewMode === 'video' && selectedResource) {
+    const getVideoEmbedUrl = (url: string): string => {
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        let videoId = '';
+        if (url.includes('youtube.com/embed/')) {
+          videoId = url.split('youtube.com/embed/')[1]?.split('?')[0] || '';
+        } else if (url.includes('youtu.be/')) {
+          videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+        } else if (url.includes('youtube.com/watch?v=')) {
+          videoId = url.split('v=')[1]?.split('&')[0] || '';
+        }
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+      }
+      return url;
+    };
+
+    return (
+      <div className="max-w-5xl mx-auto space-y-6 p-6">
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setViewMode('list');
+            setSelectedResource(null);
+          }}
+          className="mb-4"
+        >
+          <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+          Back to Resources
+        </Button>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Badge variant="secondary">{selectedResource.category}</Badge>
+                  {selectedResource.featured && <Badge className="bg-blue-600">Featured</Badge>}
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">{selectedResource.title}</h1>
+                <p className="text-lg text-gray-600 mb-4">{selectedResource.description}</p>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span>By {selectedResource.author}</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {selectedResource.duration} min
+                  </span>
+                  <span>{selectedResource.views} views</span>
+                </div>
+              </div>
+
+              {selectedResource.videoUrl && (
+                <div className="aspect-video rounded-lg overflow-hidden bg-black">
+                  <iframe
+                    src={getVideoEmbedUrl(selectedResource.videoUrl)}
+                    title={selectedResource.title}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              )}
+
+              {selectedResource.content && (
+                <div className="prose prose-lg max-w-none">
+                  <p className="text-gray-600 whitespace-pre-line">{selectedResource.content}</p>
+                </div>
+              )}
+
+              {selectedResource.tags && selectedResource.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-4 border-t">
+                  {selectedResource.tags.map((tag, index) => (
+                    <Badge key={index} variant="outline">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // List View
+  const articles = resources.filter(r => r.type === 'article');
+  const videos = resources.filter(r => r.type === 'video');
 
   return (
     <div className="space-y-6">
@@ -139,64 +305,114 @@ export default function EducationalResources() {
       {/* Search Bar */}
       <Card>
         <CardContent className="pt-6">
-          <div className="relative">
+          <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <Input
               placeholder="Search articles, videos, and guides..."
               className="pl-10 h-12"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
+            {searchQuery && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                onClick={() => {
+                  setSearchQuery('');
+                  setCurrentPage(1);
+                  fetchResources();
+                }}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </form>
         </CardContent>
       </Card>
 
       {/* Featured Content */}
-      <Card className="overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
-        <div className="grid grid-cols-1 lg:grid-cols-2">
-          <div className="p-8 flex flex-col justify-center">
-            <Badge className="w-fit mb-4 bg-blue-600">Featured</Badge>
-            <h2 className="text-2xl text-gray-900 mb-3">{featuredContent.title}</h2>
-            <p className="text-gray-600 mb-4">{featuredContent.description}</p>
-            <div className="flex items-center gap-4 text-sm text-gray-600 mb-6">
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                {featuredContent.duration}
-              </span>
-              <Badge variant="secondary">Health Education</Badge>
+      {featuredResource && (
+        <Card className="overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+            <div className="p-8 flex flex-col justify-center">
+              <Badge className="w-fit mb-4 bg-blue-600">Featured</Badge>
+              <h2 className="text-2xl text-gray-900 mb-3">{featuredResource.title}</h2>
+              <p className="text-gray-600 mb-4">{featuredResource.description}</p>
+              <div className="flex items-center gap-4 text-sm text-gray-600 mb-6">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  {featuredResource.duration} min {featuredResource.type === 'article' ? 'read' : ''}
+                </span>
+                <Badge variant="secondary">{featuredResource.category}</Badge>
+              </div>
+              <Button
+                className="w-fit bg-blue-600 hover:bg-blue-700"
+                onClick={() => handleResourceClick(featuredResource)}
+              >
+                {featuredResource.type === 'article' ? 'Read Now' : 'Watch Now'}
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
             </div>
-            <Button className="w-fit bg-blue-600 hover:bg-blue-700">
-              Read Now
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
+            <div className="aspect-video lg:aspect-auto">
+              <ImageWithFallback
+                src={featuredResource.thumbnail || ''}
+                alt={featuredResource.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
           </div>
-          <div className="aspect-video lg:aspect-auto">
-            <ImageWithFallback
-              src={featuredContent.image}
-              alt={featuredContent.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
-      {/* Topics Grid */}
-      <div>
-        <h2 className="text-xl text-gray-900 mb-4">Browse by Topic</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {topics.map((topic, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
+      {/* Categories */}
+      {categories.length > 0 && (
+        <div>
+          <h2 className="text-xl text-gray-900 mb-4">Browse by Topic</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Card
+              className={`hover:shadow-lg transition-shadow cursor-pointer ${selectedCategory === '' ? 'ring-2 ring-blue-600' : ''}`}
+              onClick={() => {
+                setSelectedCategory('');
+                setCurrentPage(1);
+              }}
+            >
               <CardContent className="pt-6 text-center">
-                <div className={`w-12 h-12 rounded-full ${topic.color} flex items-center justify-center mx-auto mb-3`}>
-                  <topic.icon className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <TrendingUp className="w-6 h-6 text-gray-600" />
                 </div>
-                <p className="text-sm text-gray-900 mb-1">{topic.name}</p>
-                <p className="text-xs text-gray-500">{topic.articles} articles</p>
+                <p className="text-sm text-gray-900 mb-1">All</p>
+                <p className="text-xs text-gray-500">{resources.length} items</p>
               </CardContent>
             </Card>
-          ))}
+            {categories.map((category) => {
+              const Icon = categoryIcons[category.name] || TrendingUp;
+              const color = categoryColors[category.name] || 'bg-gray-100 text-gray-600';
+              return (
+                <Card
+                  key={category.name}
+                  className={`hover:shadow-lg transition-shadow cursor-pointer ${selectedCategory === category.name ? 'ring-2 ring-blue-600' : ''}`}
+                  onClick={() => {
+                    setSelectedCategory(category.name);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <CardContent className="pt-6 text-center">
+                    <div className={`w-12 h-12 rounded-full ${color} flex items-center justify-center mx-auto mb-3`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <p className="text-sm text-gray-900 mb-1">{category.name}</p>
+                    <p className="text-xs text-gray-500">{category.count} items</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      <Tabs defaultValue="articles" className="w-full">
+      <Tabs defaultValue="articles" className="w-full" onValueChange={(value) => setSelectedType(value === 'articles' ? 'article' : value === 'videos' ? 'video' : 'all')}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="articles">
             <FileText className="w-4 h-4 mr-2" />
@@ -214,146 +430,157 @@ export default function EducationalResources() {
 
         {/* Articles Tab */}
         <TabsContent value="articles" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((article) => (
-              <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="aspect-video relative">
-                  <ImageWithFallback
-                    src={article.image}
-                    alt={article.title}
-                    className="w-full h-full object-cover"
-                  />
-                  {article.saved && (
-                    <div className="absolute top-3 right-3">
-                      <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                        <Bookmark className="w-4 h-4 text-blue-600 fill-blue-600" />
-                      </div>
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : articles.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-gray-600">No articles found.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {articles.map((article) => (
+                  <Card key={article._id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleResourceClick(article)}>
+                    <div className="aspect-video relative">
+                      <ImageWithFallback
+                        src={article.thumbnail || ''}
+                        alt={article.title}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                  )}
+                    <CardHeader>
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="secondary">{article.category}</Badge>
+                        <span className="text-sm text-gray-500 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {article.duration} min
+                        </span>
+                      </div>
+                      <CardTitle className="text-lg">{article.title}</CardTitle>
+                      <CardDescription>{article.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button className="w-full">Read Article</Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <span className="flex items-center px-4 text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  >
+                    Next
+                  </Button>
                 </div>
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="secondary">{article.category}</Badge>
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {article.readTime}
-                    </span>
-                  </div>
-                  <CardTitle className="text-lg">{article.title}</CardTitle>
-                  <CardDescription>{article.excerpt}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Button className="flex-1">Read Article</Button>
-                    <Button variant="outline" size="icon">
-                      <Bookmark className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="flex justify-center">
-            <Button variant="outline">
-              Load More Articles
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
+              )}
+            </>
+          )}
         </TabsContent>
 
         {/* Videos Tab */}
         <TabsContent value="videos" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {videos.map((video) => (
-              <Card key={video.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="aspect-video relative group cursor-pointer">
-                  <ImageWithFallback
-                    src={video.thumbnail}
-                    alt={video.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
-                      <Play className="w-8 h-8 text-gray-900 ml-1" />
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : videos.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-gray-600">No videos found.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {videos.map((video) => (
+                  <Card key={video._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="aspect-video relative group cursor-pointer" onClick={() => handleResourceClick(video)}>
+                      <ImageWithFallback
+                        src={video.thumbnail || ''}
+                        alt={video.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+                          <Play className="w-8 h-8 text-gray-900 ml-1" />
+                        </div>
+                      </div>
+                      <div className="absolute bottom-3 right-3 bg-black/80 text-white text-sm px-2 py-1 rounded">
+                        {video.duration} min
+                      </div>
                     </div>
-                  </div>
-                  <div className="absolute bottom-3 right-3 bg-black/80 text-white text-sm px-2 py-1 rounded">
-                    {video.duration}
-                  </div>
-                </div>
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="secondary">{video.category}</Badge>
-                    <span className="text-sm text-gray-500">{video.views} views</span>
-                  </div>
-                  <CardTitle className="text-lg">{video.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full">
-                    <Play className="w-4 h-4 mr-2" />
-                    Watch Now
+                    <CardHeader>
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="secondary">{video.category}</Badge>
+                        <span className="text-sm text-gray-500">{video.views} views</span>
+                      </div>
+                      <CardTitle className="text-lg">{video.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Button className="w-full" onClick={() => handleResourceClick(video)}>
+                        <Play className="w-4 h-4 mr-2" />
+                        Watch Now
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  >
+                    Previous
                   </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <span className="flex items-center px-4 text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
         </TabsContent>
 
         {/* Saved Tab */}
         <TabsContent value="saved" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.filter(a => a.saved).map((article) => (
-              <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="aspect-video relative">
-                  <ImageWithFallback
-                    src={article.image}
-                    alt={article.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-3 right-3">
-                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                      <Bookmark className="w-4 h-4 text-blue-600 fill-blue-600" />
-                    </div>
-                  </div>
-                </div>
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="secondary">{article.category}</Badge>
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {article.readTime}
-                    </span>
-                  </div>
-                  <CardTitle className="text-lg">{article.title}</CardTitle>
-                  <CardDescription>{article.excerpt}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Button className="flex-1">Read Article</Button>
-                    <Button variant="outline" size="icon">
-                      <Bookmark className="w-4 h-4 fill-current" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {articles.filter(a => a.saved).length === 0 && (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                  <Bookmark className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-xl text-gray-900 mb-2">No Saved Content</h3>
-                <p className="text-gray-600 mb-4">
-                  Start saving articles and videos to access them quickly later
-                </p>
-                <Button variant="outline">Browse Content</Button>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardContent className="py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <Bookmark className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-xl text-gray-900 mb-2">No Saved Content</h3>
+              <p className="text-gray-600 mb-4">
+                Start saving articles and videos to access them quickly later
+              </p>
+              <Button variant="outline">Browse Content</Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

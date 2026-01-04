@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Checkbox } from './ui/checkbox';
 import { Activity, Heart, Smartphone, TrendingUp } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface LoginPageProps {
   onComplete: () => void;
@@ -13,6 +15,7 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ onComplete, onSignupClick }: LoginPageProps) {
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -20,6 +23,8 @@ export default function LoginPage({ onComplete, onSignupClick }: LoginPageProps)
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -27,6 +32,9 @@ export default function LoginPage({ onComplete, onSignupClick }: LoginPageProps)
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    if (serverError) {
+      setServerError('');
     }
   };
 
@@ -47,12 +55,25 @@ export default function LoginPage({ onComplete, onSignupClick }: LoginPageProps)
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log('Login submitted:', formData);
-      // Proceed to app
+    setServerError('');
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await login(formData.email, formData.password);
+      toast.success('Welcome back!');
       onComplete();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
+      setServerError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -191,8 +212,18 @@ export default function LoginPage({ onComplete, onSignupClick }: LoginPageProps)
                   </label>
                 </div>
 
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                  Sign In
+                {serverError && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                    <p className="text-sm text-red-600 dark:text-red-400">{serverError}</p>
+                  </div>
+                )}
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
 
                 <div className="text-center text-sm text-gray-600 dark:text-gray-400">

@@ -6,13 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Checkbox } from './ui/checkbox';
 import { Activity, Heart, Smartphone, TrendingUp } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface SignupPageProps {
-  onComplete: () => void;
+  onComplete: (email: string) => void;
   onLoginClick: () => void;
 }
 
 export default function SignupPage({ onComplete, onLoginClick }: SignupPageProps) {
+  const { signup } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -23,6 +26,8 @@ export default function SignupPage({ onComplete, onLoginClick }: SignupPageProps
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -30,6 +35,9 @@ export default function SignupPage({ onComplete, onLoginClick }: SignupPageProps
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    if (serverError) {
+      setServerError('');
     }
   };
 
@@ -68,12 +76,30 @@ export default function SignupPage({ onComplete, onLoginClick }: SignupPageProps
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log('Form submitted:', formData);
-      // Proceed to onboarding
-      onComplete();
+    setServerError('');
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await signup(
+        formData.fullName,
+        formData.email,
+        formData.phone,
+        formData.password
+      );
+      toast.success('Account created successfully! Please check your email for verification code.');
+      onComplete(formData.email); // This will redirect to email verification
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Signup failed. Please try again.';
+      setServerError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -262,8 +288,18 @@ export default function SignupPage({ onComplete, onLoginClick }: SignupPageProps
                   <p className="text-sm text-red-500">{errors.agreeToTerms}</p>
                 )}
 
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                  Create Account
+                {serverError && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                    <p className="text-sm text-red-600 dark:text-red-400">{serverError}</p>
+                  </div>
+                )}
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
                 </Button>
 
                 <div className="text-center text-sm text-gray-600 dark:text-gray-400">

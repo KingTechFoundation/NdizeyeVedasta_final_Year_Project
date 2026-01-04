@@ -14,6 +14,7 @@ import {
   Activity,
   Heart
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -35,52 +36,106 @@ import {
   PolarRadiusAxis,
   Radar
 } from 'recharts';
+import { analyticsApi, type AnalyticsData } from '../services/api';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 export default function Analytics() {
-  const progressData = [
-    { month: 'Jan', weight: 72.5, bodyFat: 22, muscle: 55 },
-    { month: 'Feb', weight: 71.8, bodyFat: 21, muscle: 56 },
-    { month: 'Mar', weight: 71.2, bodyFat: 20, muscle: 57 },
-    { month: 'Apr', weight: 70.5, bodyFat: 19, muscle: 58 },
-  ];
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedPeriod, setSelectedPeriod] = useState<'1week' | '2weeks' | '4weeks' | '3months' | '6months'>('4weeks');
 
-  const calorieBalance = [
-    { week: 'Week 1', consumed: 14800, burned: 16200, net: -1400 },
-    { week: 'Week 2', consumed: 15200, burned: 16500, net: -1300 },
-    { week: 'Week 3', consumed: 14600, burned: 16800, net: -2200 },
-    { week: 'Week 4', consumed: 15000, burned: 16400, net: -1400 },
-  ];
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [selectedPeriod]);
 
-  const workoutDistribution = [
-    { name: 'Strength', value: 35, color: '#3b82f6' },
-    { name: 'Cardio', value: 30, color: '#ef4444' },
-    { name: 'Flexibility', value: 20, color: '#8b5cf6' },
-    { name: 'Rest', value: 15, color: '#10b981' },
-  ];
-
-  const fitnessScore = [
-    { subject: 'Strength', A: 85, fullMark: 100 },
-    { subject: 'Endurance', A: 78, fullMark: 100 },
-    { subject: 'Flexibility', A: 72, fullMark: 100 },
-    { subject: 'Balance', A: 80, fullMark: 100 },
-    { subject: 'Recovery', A: 88, fullMark: 100 },
-  ];
-
-  const achievements = [
-    { id: 1, title: '7-Day Streak', description: 'Completed workouts for 7 consecutive days', earned: true, date: 'Oct 22, 2025' },
-    { id: 2, title: 'Early Bird', description: 'Completed 10 morning workouts', earned: true, date: 'Oct 20, 2025' },
-    { id: 3, title: 'Calorie Master', description: 'Stayed within calorie goal for 30 days', earned: false, progress: 22 },
-    { id: 4, title: 'Step Champion', description: 'Reached 10,000 steps 50 times', earned: false, progress: 38 },
-    { id: 5, title: 'Strength Warrior', description: 'Completed 25 strength workouts', earned: true, date: 'Oct 15, 2025' },
-    { id: 6, title: 'Hydration Hero', description: 'Met water goal for 21 days', earned: false, progress: 14 },
-  ];
-
-  const healthMetrics = {
-    overallScore: 82,
-    improvement: '+12%',
-    riskFactors: 'Low',
-    recommendations: 3,
+  const fetchAnalyticsData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await analyticsApi.getAnalytics(selectedPeriod);
+      if (response.success && response.data) {
+        setAnalyticsData(response.data);
+      } else {
+        toast.error(response.message || 'Failed to load analytics data');
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error);
+      toast.error('Failed to load analytics data');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Format data for charts
+  const progressData = analyticsData?.bodyCompositionTrends.map((trend, index) => ({
+    week: `Week ${index + 1}`,
+    weight: trend.weight,
+    steps: trend.steps,
+    calories: trend.calories,
+  })) || [];
+
+  const calorieBalance = analyticsData?.calorieBalance.map((balance, index) => ({
+    week: `Week ${index + 1}`,
+    consumed: balance.intake,
+    burned: balance.expenditure,
+    net: balance.balance,
+  })) || [];
+
+  // Simplified workout distribution (can be enhanced with actual workout type data)
+  const workoutDistribution = [
+    { name: 'Completed', value: analyticsData?.workoutPerformance.totalWorkouts || 0, color: '#3b82f6' },
+    { name: 'Rest Days', value: Math.max(0, 20 - (analyticsData?.workoutPerformance.totalWorkouts || 0)), color: '#10b981' },
+  ];
+
+  // Fitness score based on performance (simplified)
+  const fitnessScore = [
+    { subject: 'Consistency', A: analyticsData?.goalsAchieved.percentage || 0, fullMark: 100 },
+    { subject: 'Activity', A: Math.min(100, (analyticsData?.workoutPerformance.totalWorkouts || 0) * 10), fullMark: 100 },
+    { subject: 'Nutrition', A: analyticsData?.overallHealthScore || 50, fullMark: 100 },
+    { subject: 'Recovery', A: 75, fullMark: 100 },
+  ];
+
+  const achievements = analyticsData?.goalsAchieved.goals.map((goal, index) => ({
+    id: index + 1,
+    title: goal.name,
+    description: goal.achieved ? 'Goal achieved!' : `Continue working towards this goal`,
+    earned: goal.achieved,
+    progress: goal.achieved ? 100 : 50,
+  })) || [];
+
+  const healthMetrics = analyticsData ? {
+    overallScore: analyticsData.overallHealthScore,
+    improvement: '+0%', // Can be calculated by comparing with previous period
+    riskFactors: analyticsData.riskFactors.level,
+    recommendations: 3, // Can be calculated based on risk factors
+  } : {
+    overallScore: 0,
+    improvement: '+0%',
+    riskFactors: 'Low',
+    recommendations: 0,
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading analytics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!analyticsData) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">No analytics data available</p>
+        <Button onClick={fetchAnalyticsData} className="mt-4">
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -90,16 +145,16 @@ export default function Analytics() {
           <p className="text-gray-600">Comprehensive health and fitness analytics</p>
         </div>
         <div className="flex gap-2">
-          <Select defaultValue="4weeks">
+          <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select period" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="1week">Last Week</SelectItem>
+              <SelectItem value="2weeks">Last 2 Weeks</SelectItem>
               <SelectItem value="4weeks">Last 4 Weeks</SelectItem>
               <SelectItem value="3months">Last 3 Months</SelectItem>
               <SelectItem value="6months">Last 6 Months</SelectItem>
-              <SelectItem value="1year">Last Year</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline">
@@ -136,8 +191,17 @@ export default function Analytics() {
                 <p className="text-sm text-gray-600 mb-1">Risk Factors</p>
                 <p className="text-3xl text-gray-900">{healthMetrics.riskFactors}</p>
               </div>
-              <Badge variant="secondary" className="bg-green-100 text-green-700">
-                Healthy
+              <Badge 
+                variant="secondary" 
+                className={
+                  analyticsData.riskFactors.level === 'Low' 
+                    ? 'bg-green-100 text-green-700'
+                    : analyticsData.riskFactors.level === 'Moderate'
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : 'bg-red-100 text-red-700'
+                }
+              >
+                {analyticsData.riskFactors.status}
               </Badge>
             </div>
           </CardContent>
@@ -146,9 +210,9 @@ export default function Analytics() {
         <Card>
           <CardContent className="pt-6">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Goals Achieved</p>
-              <p className="text-3xl text-gray-900">15/20</p>
-              <p className="text-sm text-gray-500 mt-1">This month</p>
+                <p className="text-sm text-gray-600 mb-1">Goals Achieved</p>
+                <p className="text-3xl text-gray-900">{analyticsData.goalsAchieved.achieved}/{analyticsData.goalsAchieved.total}</p>
+                <p className="text-sm text-gray-500 mt-1">This period</p>
             </div>
           </CardContent>
         </Card>
@@ -181,18 +245,26 @@ export default function Analytics() {
                 <CardDescription>Track your physical changes over time</CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={progressData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="weight" stroke="#3b82f6" strokeWidth={2} name="Weight (kg)" />
-                    <Line type="monotone" dataKey="bodyFat" stroke="#ef4444" strokeWidth={2} name="Body Fat (%)" />
-                    <Line type="monotone" dataKey="muscle" stroke="#10b981" strokeWidth={2} name="Muscle Mass (kg)" />
-                  </LineChart>
-                </ResponsiveContainer>
+                {progressData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={progressData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      {progressData[0]?.weight !== null && (
+                        <Line type="monotone" dataKey="weight" stroke="#3b82f6" strokeWidth={2} name="Weight (kg)" />
+                      )}
+                      <Line type="monotone" dataKey="steps" stroke="#ef4444" strokeWidth={2} name="Steps" />
+                      <Line type="monotone" dataKey="calories" stroke="#10b981" strokeWidth={2} name="Calories Burned" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-gray-500">
+                    No data available for this period
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -202,17 +274,23 @@ export default function Analytics() {
                 <CardDescription>Weekly calorie intake vs expenditure</CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={calorieBalance}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="week" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="consumed" fill="#f97316" name="Consumed" />
-                    <Bar dataKey="burned" fill="#10b981" name="Burned" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {calorieBalance.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={calorieBalance}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="consumed" fill="#f97316" name="Intake" />
+                      <Bar dataKey="burned" fill="#10b981" name="Expenditure" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-gray-500">
+                    No data available for this period
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -286,8 +364,8 @@ export default function Analytics() {
                   <TrendingUp className="w-5 h-5 text-green-600" />
                 </div>
                 <p className="text-sm text-gray-600 mb-1">Total Calories Burned</p>
-                <p className="text-2xl text-gray-900">24,850</p>
-                <p className="text-sm text-gray-500 mt-1">Last 30 days</p>
+                <p className="text-2xl text-gray-900">{analyticsData.workoutPerformance.totalCaloriesBurned.toLocaleString()}</p>
+                <p className="text-sm text-gray-500 mt-1">Last {selectedPeriod === '1week' ? '7' : selectedPeriod === '4weeks' ? '28' : '30'} days</p>
               </CardContent>
             </Card>
 
@@ -300,8 +378,8 @@ export default function Analytics() {
                   <TrendingUp className="w-5 h-5 text-green-600" />
                 </div>
                 <p className="text-sm text-gray-600 mb-1">Avg Workout Duration</p>
-                <p className="text-2xl text-gray-900">42 min</p>
-                <p className="text-sm text-gray-500 mt-1">+5 min from last month</p>
+                <p className="text-2xl text-gray-900">{analyticsData.workoutPerformance.avgDuration} min</p>
+                <p className="text-sm text-gray-500 mt-1">{analyticsData.workoutPerformance.totalWorkouts} workouts completed</p>
               </CardContent>
             </Card>
 
@@ -314,8 +392,8 @@ export default function Analytics() {
                   <TrendingUp className="w-5 h-5 text-green-600" />
                 </div>
                 <p className="text-sm text-gray-600 mb-1">Goal Completion Rate</p>
-                <p className="text-2xl text-gray-900">85%</p>
-                <p className="text-sm text-gray-500 mt-1">Excellent consistency</p>
+                <p className="text-2xl text-gray-900">{analyticsData.goalsAchieved.percentage}%</p>
+                <p className="text-sm text-gray-500 mt-1">{analyticsData.goalsAchieved.achieved}/{analyticsData.goalsAchieved.total} goals achieved</p>
               </CardContent>
             </Card>
           </div>
@@ -404,7 +482,7 @@ export default function Analytics() {
                   {achievement.earned ? (
                     <Badge variant="secondary" className="bg-green-100 text-green-700">
                       <Calendar className="w-3 h-3 mr-1" />
-                      Earned {achievement.date}
+                      Earned
                     </Badge>
                   ) : (
                     <div className="space-y-2">

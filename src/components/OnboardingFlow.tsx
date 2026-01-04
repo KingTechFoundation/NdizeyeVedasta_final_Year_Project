@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -9,13 +9,18 @@ import { Textarea } from './ui/textarea';
 import { Progress } from './ui/progress';
 import { Activity, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
+import { onboardingApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
 }
 
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+  const { checkAuth } = useAuth();
   const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     age: '',
     gender: '',
@@ -34,11 +39,78 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const totalSteps = 4;
   const progress = (step / totalSteps) * 100;
 
-  const handleNext = () => {
+  // Load existing onboarding data if available
+  useEffect(() => {
+    const loadOnboardingData = async () => {
+      try {
+        const response = await onboardingApi.getOnboardingData();
+        if (response.success && response.data?.onboardingData) {
+          const data = response.data.onboardingData;
+          setFormData({
+            age: data.age?.toString() || '',
+            gender: data.gender || '',
+            height: data.height?.toString() || '',
+            weight: data.weight?.toString() || '',
+            activityLevel: data.activityLevel || '',
+            goal: data.goal || '',
+            medicalConditions: data.medicalConditions || [],
+            dietaryRestrictions: data.dietaryRestrictions || [],
+            sleepHours: data.sleepHours?.toString() || '',
+            stressLevel: data.stressLevel || '',
+            waterIntake: data.waterIntake?.toString() || '',
+            notes: data.notes || '',
+          });
+        }
+      } catch (error) {
+        // Silently fail - user can fill in fresh data
+        console.error('Failed to load onboarding data:', error);
+      }
+    };
+
+    loadOnboardingData();
+  }, []);
+
+  const handleNext = async () => {
     if (step < totalSteps) {
       setStep(step + 1);
     } else {
-      onComplete();
+      // Last step - save onboarding data
+      await handleSubmit();
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    try {
+      const response = await onboardingApi.saveOnboardingData({
+        age: formData.age ? parseInt(formData.age) : undefined,
+        gender: formData.gender || undefined,
+        height: formData.height ? parseFloat(formData.height) : undefined,
+        weight: formData.weight ? parseFloat(formData.weight) : undefined,
+        activityLevel: formData.activityLevel || undefined,
+        goal: formData.goal || undefined,
+        medicalConditions: formData.medicalConditions,
+        dietaryRestrictions: formData.dietaryRestrictions,
+        sleepHours: formData.sleepHours ? parseFloat(formData.sleepHours) : undefined,
+        stressLevel: formData.stressLevel || undefined,
+        waterIntake: formData.waterIntake ? parseFloat(formData.waterIntake) : undefined,
+        notes: formData.notes || undefined,
+      });
+
+      if (response.success) {
+        // Refresh auth context to get updated user data
+        await checkAuth();
+        toast.success('Onboarding completed successfully!');
+        onComplete();
+      } else {
+        throw new Error(response.message || 'Failed to save onboarding data');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save onboarding data. Please try again.';
+      toast.error(errorMessage);
+      console.error('Onboarding save error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -323,8 +395,12 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
-              <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700">
-                {step === totalSteps ? 'Complete' : 'Next'}
+              <Button 
+                onClick={handleNext} 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Saving...' : (step === totalSteps ? 'Complete' : 'Next')}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
