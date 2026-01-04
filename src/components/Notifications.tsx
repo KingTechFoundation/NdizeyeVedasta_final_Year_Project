@@ -231,7 +231,7 @@ export default function Notifications() {
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                              {formatDistanceToNow(new Date(notification.createdAt))}
                             </span>
                             {notification.emailSent && (
                               <span className="flex items-center gap-1">
