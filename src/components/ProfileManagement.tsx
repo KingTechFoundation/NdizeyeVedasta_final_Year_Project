@@ -26,7 +26,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 
 export default function ProfileManagement() {
-  const { user: authUser, setUser } = useAuth();
+  const { setUser } = useAuth();
   const [editingProfile, setEditingProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

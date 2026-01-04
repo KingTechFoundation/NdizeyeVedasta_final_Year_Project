@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { 
@@ -12,14 +12,13 @@ import {
   Target,
   Award,
   Settings,
-  AlertCircle,
   Calendar,
   Loader2,
 } from 'lucide-react';
 import { notificationApi, type Notification } from '../services/api';
 import { toast } from 'sonner';
 // Simple date formatter (fallback if date-fns not available)
-const formatDistanceToNow = (date: Date) => {
+const formatDistanceToNow = (date: Date): string => {
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
   
