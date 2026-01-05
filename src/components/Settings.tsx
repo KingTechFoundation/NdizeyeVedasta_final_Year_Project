@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -7,10 +7,10 @@ import { Switch } from './ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Separator } from './ui/separator';
-import { 
-  Bell, 
-  Lock, 
-  User, 
+import {
+  Bell,
+  Lock,
+  User,
   Globe,
   Moon,
   Smartphone,
@@ -22,14 +22,25 @@ import {
   EyeOff,
   Database,
   Share2,
-  AlertCircle
+  AlertCircle,
+  Watch,
+  RefreshCw,
+  Check,
+  Plus,
+  Activity,
+  Heart
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import { Badge } from './ui/badge';
+import { deviceApi, type Device } from '../services/api';
+import { toast } from 'sonner';
 
 export default function Settings() {
   const { theme, toggleTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [isLoadingDevices, setIsLoadingDevices] = useState(false);
+  const [isSyncing, setIsSyncing] = useState<string | null>(null);
 
   const [notifications, setNotifications] = useState({
     workoutReminders: true,
@@ -52,6 +63,96 @@ export default function Settings() {
     researchParticipation: false,
   });
 
+  useEffect(() => {
+    fetchDevices();
+  }, []);
+
+  const fetchDevices = async () => {
+    setIsLoadingDevices(true);
+    try {
+      const response = await deviceApi.getDevices();
+      if (response.success && response.data) {
+        setDevices(response.data.devices);
+      }
+    } catch (error) {
+      console.error('Failed to fetch devices:', error);
+    } finally {
+      setIsLoadingDevices(false);
+    }
+  };
+
+  const handleConnectDevice = async () => {
+    const deviceName = window.prompt('Enter device name:');
+    if (!deviceName) return;
+
+    const deviceTypes = ['apple-watch', 'fitbit', 'garmin', 'samsung-health', 'google-fit', 'other'];
+    const deviceType = window.prompt(
+      `Enter device type (${deviceTypes.join(', ')}):`,
+      'fitbit'
+    );
+    if (!deviceType || !deviceTypes.includes(deviceType as any)) {
+      toast.error('Invalid device type');
+      return;
+    }
+
+    const deviceId = `device_${Date.now()}`;
+    const accessToken = `token_${Math.random().toString(36).substring(7)}`;
+
+    try {
+      const response = await deviceApi.connectDevice({
+        name: deviceName,
+        type: deviceType as Device['type'],
+        deviceId,
+        accessToken,
+      });
+
+      if (response.success) {
+        toast.success('Device connected successfully!');
+        fetchDevices();
+      }
+    } catch (error) {
+      toast.error('Failed to connect device');
+    }
+  };
+
+  const handleSyncDevice = async (deviceId: string) => {
+    setIsSyncing(deviceId);
+    try {
+      const steps = Math.floor(Math.random() * 5000) + 5000; // Random 5000-10000
+      const sleep = Math.floor(Math.random() * 3) + 6; // Random 6-9 hours
+      const weight = 70 + Math.random() * 10; // Random 70-80 kg
+
+      const response = await deviceApi.syncDevice(deviceId, {
+        steps,
+        sleep,
+        weight,
+      });
+
+      if (response.success) {
+        toast.success(`Synced! ${steps} steps, ${sleep}h sleep, ${weight.toFixed(1)}kg`);
+        fetchDevices();
+      }
+    } catch (error) {
+      toast.error('Failed to sync device');
+    } finally {
+      setIsSyncing(null);
+    }
+  };
+
+  const handleDisconnectDevice = async (deviceId: string) => {
+    if (!window.confirm('Are you sure you want to disconnect this device?')) return;
+
+    try {
+      const response = await deviceApi.disconnectDevice(deviceId);
+      if (response.success) {
+        toast.success('Device disconnected');
+        fetchDevices();
+      }
+    } catch (error) {
+      toast.error('Failed to disconnect device');
+    }
+  };
+
   const handleNotificationToggle = (key: keyof typeof notifications) => {
     setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
   };
@@ -70,10 +171,14 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="account" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="account">
             <User className="w-4 h-4 mr-2" />
             Account
+          </TabsTrigger>
+          <TabsTrigger value="devices">
+            <Smartphone className="w-4 h-4 mr-2" />
+            Devices
           </TabsTrigger>
           <TabsTrigger value="notifications">
             <Bell className="w-4 h-4 mr-2" />
@@ -107,7 +212,7 @@ export default function Settings() {
                   <Input id="lastName" defaultValue="Ndizeye" />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
                 <Input id="email" type="email" defaultValue="veda@gmail.com" />
@@ -131,9 +236,9 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label htmlFor="currentPassword">Current Password</Label>
                 <div className="relative">
-                  <Input 
-                    id="currentPassword" 
-                    type={showPassword ? 'text' : 'password'} 
+                  <Input
+                    id="currentPassword"
+                    type={showPassword ? 'text' : 'password'}
                   />
                   <button
                     type="button"
@@ -181,6 +286,127 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
+        {/* Devices Tab */}
+        <TabsContent value="devices" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Connected Devices</CardTitle>
+                  <CardDescription>Manage your wearable fitness trackers</CardDescription>
+                </div>
+                <Button onClick={handleConnectDevice} className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Connect Device
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoadingDevices ? (
+                <div className="flex items-center justify-center py-12">
+                  <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : devices.length > 0 ? (
+                <div className="space-y-4">
+                  {devices.map((device) => (
+                    <div
+                      key={device._id}
+                      className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                          <Watch className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {device.name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="secondary" className="capitalize">
+                              {device.type.replace('-', ' ')}
+                            </Badge>
+                            {device.lastSynced && (
+                              <span className="text-xs text-gray-500">
+                                Last synced: {new Date(device.lastSynced).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSyncDevice(device._id)}
+                          disabled={isSyncing === device._id}
+                        >
+                          <RefreshCw
+                            className={`w-4 h-4 mr-2 ${isSyncing === device._id ? 'animate-spin' : ''
+                              }`}
+                          />
+                          {isSyncing === device._id ? 'Syncing...' : 'Sync Now'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDisconnectDevice(device._id)}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-gray-50 dark:bg-gray-900/10 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+                  <Smartphone className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    No devices connected yet.
+                  </p>
+                  <Button variant="outline" onClick={handleConnectDevice}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Connect your first device
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Sync Settings</CardTitle>
+              <CardDescription>Control what data gets synced automatically</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">Automatic Sync</p>
+                  <p className="text-sm text-gray-500">Sync data in the background</p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+              <Separator />
+              <div className="space-y-4">
+                {[
+                  { label: 'Steps & Activity', icon: Activity },
+                  { label: 'Sleep Data', icon: Moon },
+                  { label: 'Weight & Body Composition', icon: Database },
+                  { label: 'Heart Rate', icon: Heart },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <item.icon className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-900 dark:text-white">{item.label}</span>
+                    </div>
+                    <Check className="w-4 h-4 text-green-600" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Notifications Tab */}
         <TabsContent value="notifications" className="space-y-6">
           <Card>
@@ -197,7 +423,7 @@ export default function Settings() {
                     <p className="text-sm text-gray-500 dark:text-gray-400">Receive notifications on your device</p>
                   </div>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifications.pushNotifications}
                   onCheckedChange={() => handleNotificationToggle('pushNotifications')}
                 />
@@ -213,7 +439,7 @@ export default function Settings() {
                     <p className="text-sm text-gray-500 dark:text-gray-400">Receive updates via email</p>
                   </div>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifications.emailNotifications}
                   onCheckedChange={() => handleNotificationToggle('emailNotifications')}
                 />
@@ -232,7 +458,7 @@ export default function Settings() {
                   <p className="text-gray-900 dark:text-white">Workout Reminders</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Remind me of scheduled workouts</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifications.workoutReminders}
                   onCheckedChange={() => handleNotificationToggle('workoutReminders')}
                 />
@@ -245,7 +471,7 @@ export default function Settings() {
                   <p className="text-gray-900 dark:text-white">Meal Reminders</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Notify me when it's time to eat</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifications.mealReminders}
                   onCheckedChange={() => handleNotificationToggle('mealReminders')}
                 />
@@ -258,7 +484,7 @@ export default function Settings() {
                   <p className="text-gray-900 dark:text-white">Hydration Alerts</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Remind me to drink water</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifications.hydrationAlerts}
                   onCheckedChange={() => handleNotificationToggle('hydrationAlerts')}
                 />
@@ -271,7 +497,7 @@ export default function Settings() {
                   <p className="text-gray-900 dark:text-white">Weekly Progress Reports</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Summary of your weekly achievements</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifications.progressReports}
                   onCheckedChange={() => handleNotificationToggle('progressReports')}
                 />
@@ -290,7 +516,7 @@ export default function Settings() {
                   <p className="text-gray-900 dark:text-white">Challenge Updates</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Updates on challenges you've joined</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifications.challengeUpdates}
                   onCheckedChange={() => handleNotificationToggle('challengeUpdates')}
                 />
@@ -303,7 +529,7 @@ export default function Settings() {
                   <p className="text-gray-900 dark:text-white">Community Activity</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Comments, likes, and shares on your posts</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifications.communityActivity}
                   onCheckedChange={() => handleNotificationToggle('communityActivity')}
                 />
@@ -321,7 +547,7 @@ export default function Settings() {
                 <div>
                   <p className="text-sm text-gray-900 dark:text-white mb-1">Important Notice</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Medifit AI is not designed for collecting personally identifiable information (PII) or securing sensitive health data. 
+                    Medifit AI is not designed for collecting personally identifiable information (PII) or securing sensitive health data.
                     All data is stored locally and used only to enhance your experience.
                   </p>
                 </div>
@@ -337,8 +563,8 @@ export default function Settings() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Who can see my progress?</Label>
-                <Select 
-                  value={privacy.shareProgress} 
+                <Select
+                  value={privacy.shareProgress}
                   onValueChange={(value) => setPrivacy(prev => ({ ...prev, shareProgress: value }))}
                 >
                   <SelectTrigger>
@@ -359,7 +585,7 @@ export default function Settings() {
                   <p className="text-gray-900 dark:text-white">Show Profile in Community</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Allow others to find and view your profile</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={privacy.showProfile}
                   onCheckedChange={() => handlePrivacyToggle('showProfile')}
                 />
@@ -372,7 +598,7 @@ export default function Settings() {
                   <p className="text-gray-900 dark:text-white">Show Workout History</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Display your workouts on your profile</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={privacy.showWorkouts}
                   onCheckedChange={() => handlePrivacyToggle('showWorkouts')}
                 />
@@ -385,7 +611,7 @@ export default function Settings() {
                   <p className="text-gray-900 dark:text-white">Show Meal Plans</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Display your meals on your profile</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={privacy.showMeals}
                   onCheckedChange={() => handlePrivacyToggle('showMeals')}
                 />
@@ -398,7 +624,7 @@ export default function Settings() {
                   <p className="text-gray-900 dark:text-white">Allow Direct Messages</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Let community members message you</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={privacy.allowMessages}
                   onCheckedChange={() => handlePrivacyToggle('allowMessages')}
                 />
@@ -422,7 +648,7 @@ export default function Settings() {
                     </p>
                   </div>
                 </div>
-                <Switch 
+                <Switch
                   checked={privacy.dataSharing}
                   onCheckedChange={() => handlePrivacyToggle('dataSharing')}
                 />
@@ -440,7 +666,7 @@ export default function Settings() {
                     </p>
                   </div>
                 </div>
-                <Switch 
+                <Switch
                   checked={privacy.researchParticipation}
                   onCheckedChange={() => handlePrivacyToggle('researchParticipation')}
                 />
@@ -500,7 +726,7 @@ export default function Settings() {
                     </p>
                   </div>
                 </div>
-                <Switch 
+                <Switch
                   checked={theme === 'dark'}
                   onCheckedChange={toggleTheme}
                 />

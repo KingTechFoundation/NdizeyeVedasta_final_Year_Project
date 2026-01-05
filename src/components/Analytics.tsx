@@ -38,7 +38,7 @@ import {
 } from 'recharts';
 import { analyticsApi, type AnalyticsData } from '../services/api';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import AnalyticsSkeleton from './AnalyticsSkeleton';
 
 export default function Analytics() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
@@ -116,14 +116,7 @@ export default function Analytics() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading analytics...</p>
-        </div>
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   if (!analyticsData) {
@@ -191,14 +184,14 @@ export default function Analytics() {
                 <p className="text-sm text-gray-600 mb-1">Risk Factors</p>
                 <p className="text-3xl text-gray-900">{healthMetrics.riskFactors}</p>
               </div>
-              <Badge 
-                variant="secondary" 
+              <Badge
+                variant="secondary"
                 className={
-                  analyticsData.riskFactors.level === 'Low' 
+                  analyticsData.riskFactors.level === 'Low'
                     ? 'bg-green-100 text-green-700'
                     : analyticsData.riskFactors.level === 'Moderate'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-red-100 text-red-700'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-red-100 text-red-700'
                 }
               >
                 {analyticsData.riskFactors.status}
@@ -210,9 +203,9 @@ export default function Analytics() {
         <Card>
           <CardContent className="pt-6">
             <div>
-                <p className="text-sm text-gray-600 mb-1">Goals Achieved</p>
-                <p className="text-3xl text-gray-900">{analyticsData.goalsAchieved.achieved}/{analyticsData.goalsAchieved.total}</p>
-                <p className="text-sm text-gray-500 mt-1">This period</p>
+              <p className="text-sm text-gray-600 mb-1">Goals Achieved</p>
+              <p className="text-3xl text-gray-900">{analyticsData.goalsAchieved.achieved}/{analyticsData.goalsAchieved.total}</p>
+              <p className="text-sm text-gray-500 mt-1">This period</p>
             </div>
           </CardContent>
         </Card>
@@ -468,8 +461,8 @@ export default function Analytics() {
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-3 mb-3">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center ${achievement.earned
-                        ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                        : 'bg-gray-200'
+                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                      : 'bg-gray-200'
                       }`}>
                       <Award className={`w-6 h-6 ${achievement.earned ? 'text-white' : 'text-gray-400'
                         }`} />

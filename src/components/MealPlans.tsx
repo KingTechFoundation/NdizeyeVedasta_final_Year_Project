@@ -11,10 +11,11 @@ import {
   BookOpen,
   Search,
   Filter,
-  Loader2,
   X,
   Trash2,
+  Loader2
 } from 'lucide-react';
+import MealPlansSkeleton from './MealPlansSkeleton';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -102,7 +103,6 @@ export default function MealPlans() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
   const [isLoadingMeals, setIsLoadingMeals] = useState(true);
-  const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,18 +121,6 @@ export default function MealPlans() {
 
   // Calculate nutrition goals from user data
   const nutritionGoals = calculateNutritionGoals(user);
-  const dailyNutrition = {
-    calories: { consumed: totals.calories, goal: nutritionGoals.calories },
-    protein: { consumed: totals.protein, goal: nutritionGoals.protein },
-    carbs: { consumed: totals.carbs, goal: nutritionGoals.carbs },
-    fats: { consumed: totals.fats, goal: nutritionGoals.fats },
-  };
-
-  useEffect(() => {
-    fetchMeals();
-    fetchRecipes();
-  }, []);
-
   const fetchMeals = async () => {
     setIsLoadingMeals(true);
     try {
@@ -163,6 +151,22 @@ export default function MealPlans() {
     } finally {
       setIsLoadingRecipes(false);
     }
+  };
+
+  useEffect(() => {
+    fetchMeals();
+    fetchRecipes();
+  }, []);
+
+  if (isLoadingMeals) {
+    return <MealPlansSkeleton />;
+  }
+
+  const dailyNutrition = {
+    calories: { consumed: totals.calories, goal: nutritionGoals.calories },
+    protein: { consumed: totals.protein, goal: nutritionGoals.protein },
+    carbs: { consumed: totals.carbs, goal: nutritionGoals.carbs },
+    fats: { consumed: totals.fats, goal: nutritionGoals.fats },
   };
 
   const handleDeleteMeal = async (mealId: string) => {
@@ -206,7 +210,7 @@ export default function MealPlans() {
 
   const handleAddCustomMeal = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!mealForm.name.trim()) {
       toast.error('Meal name is required');
@@ -373,14 +377,7 @@ export default function MealPlans() {
 
         {/* Today's Meals */}
         <TabsContent value="today" className="space-y-4">
-          {isLoadingMeals ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Loader2 className="w-8 h-8 animate-spin text-green-600 mx-auto mb-4" />
-                <p className="text-gray-600">Loading meals...</p>
-              </CardContent>
-            </Card>
-          ) : meals.length === 0 ? (
+          {meals.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <p className="text-gray-600 mb-4">No meals logged for today</p>
@@ -520,14 +517,7 @@ export default function MealPlans() {
             </CardContent>
           </Card>
 
-          {isLoadingRecipes ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Loader2 className="w-8 h-8 animate-spin text-green-600 mx-auto mb-4" />
-                <p className="text-gray-600">Loading recipes...</p>
-              </CardContent>
-            </Card>
-          ) : recipes.length === 0 ? (
+          {recipes.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <p className="text-gray-600">No recipes found.</p>
@@ -603,7 +593,7 @@ export default function MealPlans() {
                 <p className="text-gray-600 mb-4">
                   Ask our AI Coach to generate personalized recipes based on your dietary preferences and goals
                 </p>
-                <Button 
+                <Button
                   className="bg-green-600 hover:bg-green-700"
                   onClick={() => navigateTo('coach')}
                 >
@@ -624,7 +614,7 @@ export default function MealPlans() {
               Enter the details for your custom meal. All nutritional values are per serving.
             </DialogDescription>
           </DialogHeader>
-          
+
           <form onSubmit={handleAddCustomMeal} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Meal Name */}

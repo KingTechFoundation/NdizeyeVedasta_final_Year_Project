@@ -4,22 +4,22 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Progress } from './ui/progress';
-import { 
-  Dumbbell, 
-  Clock, 
-  Flame, 
+import {
+  Dumbbell,
+  Clock,
+  Flame,
   TrendingUp,
   Play,
   CheckCircle2,
   ChevronRight,
   Calendar,
   Target,
-  Loader2,
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { workoutApi, type WorkoutPlan, type WorkoutProgress, type WorkoutSession, type WeekScheduleItem } from '../services/api';
 import { toast } from 'sonner';
 import { useNavigation } from '../contexts/NavigationContext';
+import WorkoutPlansSkeleton from './WorkoutPlansSkeleton';
 
 export default function WorkoutPlans() {
   const { navigateTo } = useNavigation();
@@ -97,14 +97,7 @@ export default function WorkoutPlans() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading workout plans...</p>
-        </div>
-      </div>
-    );
+    return <WorkoutPlansSkeleton />;
   }
 
   return (
@@ -246,16 +239,14 @@ export default function WorkoutPlans() {
                     {todayWorkout.exercises.map((exercise, index) => (
                       <div
                         key={index}
-                        className={`flex items-center justify-between p-4 border rounded-lg ${
-                          exercise.completed ? 'bg-gray-50' : 'bg-white'
-                        }`}
+                        className={`flex items-center justify-between p-4 border rounded-lg ${exercise.completed ? 'bg-gray-50' : 'bg-white'
+                          }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            exercise.completed 
-                              ? 'bg-green-100' 
-                              : 'bg-gray-100'
-                          }`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${exercise.completed
+                            ? 'bg-green-100'
+                            : 'bg-gray-100'
+                            }`}>
                             {exercise.completed ? (
                               <CheckCircle2 className="w-5 h-5 text-green-600" />
                             ) : (
@@ -281,9 +272,25 @@ export default function WorkoutPlans() {
                   </div>
                 )}
 
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  onClick={async () => {
+                    if (!todayWorkout._id) return;
+                    try {
+                      if (todayWorkout.status === 'scheduled') {
+                        await workoutApi.startWorkout(todayWorkout._id);
+                        toast.success('Workout started!');
+                        fetchWorkoutData(); // Refresh data
+                      }
+                      // Could navigate to a dedicated workout player page
+                    } catch (error) {
+                      toast.error('Failed to start workout');
+                    }
+                  }}
+                >
                   <Play className="w-4 h-4 mr-2" />
-                  {todayWorkout.status === 'completed' ? 'Review Workout' : 'Start Workout'}
+                  {todayWorkout.status === 'completed' ? 'Review Workout' :
+                    todayWorkout.status === 'in-progress' ? 'Continue Workout' : 'Start Workout'}
                 </Button>
               </CardContent>
             </Card>
@@ -322,28 +329,25 @@ export default function WorkoutPlans() {
                   {weekSchedule.map((day, index) => (
                     <div
                       key={index}
-                      className={`flex items-center justify-between p-4 border rounded-lg ${
-                        day.active 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : day.completed 
-                          ? 'bg-gray-50' 
+                      className={`flex items-center justify-between p-4 border rounded-lg ${day.active
+                        ? 'border-blue-500 bg-blue-50'
+                        : day.completed
+                          ? 'bg-gray-50'
                           : 'bg-white'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                          day.completed 
-                            ? 'bg-green-100' 
-                            : day.active 
-                            ? 'bg-blue-100' 
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${day.completed
+                          ? 'bg-green-100'
+                          : day.active
+                            ? 'bg-blue-100'
                             : 'bg-gray-100'
-                        }`}>
+                          }`}>
                           {day.completed ? (
                             <CheckCircle2 className="w-6 h-6 text-green-600" />
                           ) : (
-                            <Dumbbell className={`w-6 h-6 ${
-                              day.active ? 'text-blue-600' : 'text-gray-400'
-                            }`} />
+                            <Dumbbell className={`w-6 h-6 ${day.active ? 'text-blue-600' : 'text-gray-400'
+                              }`} />
                           )}
                         </div>
                         <div>

@@ -17,12 +17,12 @@ import {
   Calendar,
   Award,
   ArrowDown,
-  Loader2,
 } from 'lucide-react';
 import { dashboardApi, workoutApi, type DashboardData, type WorkoutSession } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '../contexts/NavigationContext';
 import { toast } from 'sonner';
+import DashboardSkeleton from './DashboardSkeleton';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -78,14 +78,7 @@ export default function Dashboard() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!dashboardData) {
@@ -134,6 +127,63 @@ export default function Dashboard() {
               value={Math.min((dailyStats.steps / dailyStats.stepsGoal) * 100, 100)}
               className="mt-4"
             />
+            <div className="flex gap-2 mt-3">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={async () => {
+                  try {
+                    const response = await dashboardApi.getDashboard();
+                    if (response.success) {
+                      await import('../services/api').then(({ healthTrackerApi }) =>
+                        healthTrackerApi.addSteps(100)
+                      );
+                      fetchDashboardData();
+                      toast.success('+100 steps added!');
+                    }
+                  } catch (error) {
+                    toast.error('Failed to add steps');
+                  }
+                }}
+              >
+                +100
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={async () => {
+                  try {
+                    const { healthTrackerApi } = await import('../services/api');
+                    await healthTrackerApi.addSteps(500);
+                    fetchDashboardData();
+                    toast.success('+500 steps added!');
+                  } catch (error) {
+                    toast.error('Failed to add steps');
+                  }
+                }}
+              >
+                +500
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={async () => {
+                  try {
+                    const { healthTrackerApi } = await import('../services/api');
+                    await healthTrackerApi.addSteps(1000);
+                    fetchDashboardData();
+                    toast.success('+1000 steps added!');
+                  } catch (error) {
+                    toast.error('Failed to add steps');
+                  }
+                }}
+              >
+                +1000
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -180,6 +230,25 @@ export default function Dashboard() {
               value={Math.min((dailyStats.water / dailyStats.waterGoal) * 100, 100)}
               className="mt-4"
             />
+            <div className="flex gap-2 mt-3">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={async () => {
+                  try {
+                    const { healthTrackerApi } = await import('../services/api');
+                    await healthTrackerApi.addWater(1);
+                    fetchDashboardData();
+                    toast.success('+1 glass added!');
+                  } catch (error) {
+                    toast.error('Failed to add water');
+                  }
+                }}
+              >
+                +1 glass
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -203,6 +272,28 @@ export default function Dashboard() {
               value={Math.min((dailyStats.sleep / dailyStats.sleepGoal) * 100, 100)}
               className="mt-4"
             />
+            <div className="mt-3">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={async () => {
+                  const hours = window.prompt('Enter sleep hours (e.g., 7.5):');
+                  if (hours && !isNaN(parseFloat(hours))) {
+                    try {
+                      const { healthTrackerApi } = await import('../services/api');
+                      await healthTrackerApi.addSleep(parseFloat(hours));
+                      fetchDashboardData();
+                      toast.success(`Sleep logged: ${hours} hours`);
+                    } catch (error) {
+                      toast.error('Failed to log sleep');
+                    }
+                  }
+                }}
+              >
+                Log Sleep
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -316,14 +407,12 @@ export default function Dashboard() {
                       className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                          meal.completed ? 'bg-green-100' : 'bg-gray-100'
-                        }`}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center ${meal.completed ? 'bg-green-100' : 'bg-gray-100'
+                          }`}
                       >
                         <Apple
-                          className={`w-6 h-6 ${
-                            meal.completed ? 'text-green-600' : 'text-gray-400'
-                          }`}
+                          className={`w-6 h-6 ${meal.completed ? 'text-green-600' : 'text-gray-400'
+                            }`}
                         />
                       </div>
                       <div className="flex-1">

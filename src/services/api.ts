@@ -82,7 +82,7 @@ const apiRequest = async <T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> => {
   const token = getToken();
-  
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -101,7 +101,7 @@ const apiRequest = async <T>(
     // Check if response is JSON
     const contentType = response.headers.get('content-type');
     let data;
-    
+
     if (contentType && contentType.includes('application/json')) {
       data = await response.json();
     } else {
@@ -633,6 +633,42 @@ export const workoutApi = {
       body: JSON.stringify(sessionData),
     });
   },
+
+  // Update workout session
+  updateWorkoutSession: async (
+    sessionId: string,
+    updates: Partial<WorkoutSession>
+  ): Promise<ApiResponse<{ session: WorkoutSession }>> => {
+    return apiRequest<{ session: WorkoutSession }>(`/workouts/sessions/${sessionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Start workout
+  startWorkout: async (sessionId: string): Promise<ApiResponse<{ session: WorkoutSession }>> => {
+    return apiRequest<{ session: WorkoutSession }>(`/workouts/sessions/${sessionId}/start`, {
+      method: 'POST',
+    });
+  },
+
+  // Complete workout
+  completeWorkout: async (
+    sessionId: string,
+    data?: { duration?: number; caloriesBurned?: number }
+  ): Promise<ApiResponse<{ session: WorkoutSession }>> => {
+    return apiRequest<{ session: WorkoutSession }>(`/workouts/sessions/${sessionId}/complete`, {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+    });
+  },
+
+  // Skip workout
+  skipWorkout: async (sessionId: string): Promise<ApiResponse<{ session: WorkoutSession }>> => {
+    return apiRequest<{ session: WorkoutSession }>(`/workouts/sessions/${sessionId}/skip`, {
+      method: 'POST',
+    });
+  },
 };
 
 // Health Tracker API functions
@@ -691,6 +727,22 @@ export const healthTrackerApi = {
     return apiRequest<{ tracker: HealthTrackerData }>('/health-tracker/add-water', {
       method: 'POST',
       body: JSON.stringify({ glasses }),
+    });
+  },
+
+  // Add sleep
+  addSleep: async (hours: number): Promise<ApiResponse<{ tracker: HealthTrackerData }>> => {
+    return apiRequest<{ tracker: HealthTrackerData }>('/health-tracker/add-sleep', {
+      method: 'POST',
+      body: JSON.stringify({ hours }),
+    });
+  },
+
+  // Set weight
+  setWeight: async (weight: number): Promise<ApiResponse<{ tracker: HealthTrackerData }>> => {
+    return apiRequest<{ tracker: HealthTrackerData }>('/health-tracker/set-weight', {
+      method: 'POST',
+      body: JSON.stringify({ weight }),
     });
   },
 };
