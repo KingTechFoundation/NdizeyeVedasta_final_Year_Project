@@ -103,6 +103,7 @@ export default function MealPlans() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
   const [isLoadingMeals, setIsLoadingMeals] = useState(true);
+  const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -517,7 +518,29 @@ export default function MealPlans() {
             </CardContent>
           </Card>
 
-          {recipes.length === 0 ? (
+          {isLoadingRecipes ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <div className="aspect-video bg-gray-200 dark:bg-gray-800" />
+                  <CardHeader>
+                    <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-2" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-2 mb-4">
+                      <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-12" />
+                      <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-12" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="h-10 bg-gray-200 dark:bg-gray-800 rounded" />
+                      <div className="h-10 bg-gray-200 dark:bg-gray-800 rounded" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : recipes.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <p className="text-gray-600">No recipes found.</p>

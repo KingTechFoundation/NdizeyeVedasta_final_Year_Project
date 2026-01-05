@@ -8,16 +8,12 @@ import {
   Activity,
   Heart,
   Footprints,
-  Flame,
   Moon,
   Wifi,
   WifiOff,
   RefreshCw,
-  Settings as SettingsIcon,
-  ChevronRight,
-  AlertCircle,
   Battery,
-  Plus
+  AlertCircle
 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { Switch } from './ui/switch';

@@ -678,6 +678,8 @@ export interface HealthTrackerData {
   date: string;
   steps: number;
   stepsGoal: number;
+  calories: number;
+  caloriesGoal: number;
   water: number;
   waterGoal: number;
   sleep: number;

@@ -17,18 +17,13 @@ import {
   Download
 } from 'lucide-react';
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  Legend
+  ResponsiveContainer
 } from 'recharts';
 import { healthTrackerApi, type HealthTrackerData } from '../services/api';
 import { toast } from 'sonner';
